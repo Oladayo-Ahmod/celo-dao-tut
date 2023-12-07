@@ -1,7 +1,7 @@
 
 # A Comprehensive Guide for Establishing a Decentralised Autonomous Organisation (DAO) on Celo
 
-This tutorial provides a step-by-step method for creating and implementing a Decentralised Autonomous Organisation (DAO) on the Celo blockchain. The provided Solidity smart contract utilizes OpenZeppelin components for improved functionality and security.
+This tutorial provides a step-by-step method for creating and implementing a Decentralised Autonomous Organisation (DAO) on the Celo blockchain using hardhat deploy. The provided Solidity smart contract utilizes OpenZeppelin components for improved functionality and security.
 
 ## Table of Contents
 
