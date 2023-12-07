@@ -1,0 +1,21 @@
+{
+  "name": "celo-dao-tut",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.0",
+    "hardhat": "^2.19.2",
+    "hardhat-deploy": "^0.11.44"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  }
+}
