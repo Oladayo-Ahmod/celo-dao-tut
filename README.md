@@ -431,25 +431,25 @@ this function ensures the necessary conditions are met before making a payment t
 
 ```solidity
     function payBeneficiary(uint proposalId) external
-    stakeholderOnly("Only stakeholders can make payment") nonReentrant() {
-        Proposals storage stakeholderProposal = raisedProposals[proposalId];
-        require(balance >= stakeholderProposal.amount, "insufficient fund");
-        if(stakeholderProposal.paid == true) revert("payment already made");
-        if(stakeholderProposal.upVote <= stakeholderProposal.downVotes) revert("insufficient votes");
-
-        pay(stakeholderProposal.amount,stakeholderProposal.beneficiary);
-        stakeholderProposal.paid = true;
-        stakeholderProposal.executor = msg.sender;
-        balance -= stakeholderProposal.amount;
-
-        emit ProposalAction(
-            msg.sender,
-            STAKEHOLDER_ROLE,
-            "PAYMENT SUCCESSFULLY MADE!",
-            stakeholderProposal.beneficiary,
-            stakeholderProposal.amount
-        );
-    }
+      stakeholderOnly("Only stakeholders can make payment") nonReentrant() {
+          Proposals storage stakeholderProposal = raisedProposals[proposalId];
+          require(balance >= stakeholderProposal.amount, "insufficient fund");
+          if(stakeholderProposal.paid == true) revert("payment already made");
+          if(stakeholderProposal.upVote <= stakeholderProposal.downVotes) revert("insufficient votes");
+  
+          pay(stakeholderProposal.amount,stakeholderProposal.beneficiary);
+          stakeholderProposal.paid = true;
+          stakeholderProposal.executor = msg.sender;
+          balance -= stakeholderProposal.amount;
+  
+          emit ProposalAction(
+              msg.sender,
+              STAKEHOLDER_ROLE,
+              "PAYMENT SUCCESSFULLY MADE!",
+              stakeholderProposal.beneficiary,
+              stakeholderProposal.amount
+          );
+     }
 ```
 
 ### 5.2 Single proposal
