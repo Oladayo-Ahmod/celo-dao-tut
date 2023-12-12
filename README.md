@@ -28,7 +28,7 @@ This tutorial provides a step-by-step method for creating and implementing a Dec
   - [6.5 Contributor Status](#65-contributor-status)
   - [6.6 Contributor Balance](#66-contributor-balance)
   - [6.7 Deployer Address](#67-deployer-address)
-- [Section 7: Deploying the DAO on Celo using hardhat deploy](#71-deploying-the-dao-on-celo-using-hardhat-deploy)
+- [Section 7: Deploying the DAO on Celo using hardhat deploy](#72-deploying-the-dao-on-celo-using-hardhat-deploy)
   - [7.1 Install dependencies](#71-install-dependencies)
   - [7.2 Replace Lock.sol](#72-replace-lock.sol)
   - [7.3 Compile and Deploy](#73-compile-and-deploy)
