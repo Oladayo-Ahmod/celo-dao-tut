@@ -17,10 +17,10 @@ contract CeloDao is AccessControl,ReentrancyGuard {
     bytes32 private immutable STAKEHOLDER_ROLE = keccak256("stakeholder");
 
     mapping(uint256 => Proposals) private raisedProposals;
-    mapping(address => uint256[]) private stakeholderVotes;
     mapping(uint256 => Voted[]) private votedOn;
     mapping(address => uint256) private contributors;
     mapping(address => uint256) private stakeholders;
+    mapping(address => mapping(uint256 => bool)) private stakeholderVotes;
 
       struct Proposals {
         uint256 id;
@@ -149,17 +149,13 @@ contract CeloDao is AccessControl,ReentrancyGuard {
     }
 
     // handling vote
-    function handleVoting(Proposals storage proposal) private {
+        function handleVoting(Proposals storage proposal) private {
         if (proposal.passed || proposal.duration <= block.timestamp) {
             proposal.passed = true;
             revert("Time has already passed");
         }
-        uint256[] memory tempVotes = stakeholderVotes[msg.sender];
-        for (uint256 vote = 0; vote < tempVotes.length; vote++) {
-            if (proposal.id == tempVotes[vote])
-                revert("double voting is not allowed");
-        }
-
+        require(!stakeholderVotes[msg.sender][proposal.id], "Double voting is not allowed");
+        stakeholderVotes[msg.sender][proposal.id] = true;
     }
 
      // pay beneficiary
