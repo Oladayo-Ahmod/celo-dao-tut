@@ -149,13 +149,13 @@ contract CeloDao is AccessControl,ReentrancyGuard {
     }
 
     // handling vote
-        function handleVoting(Proposals storage proposal) private {
+    function handleVoting(Proposals storage proposal) private {
         if (proposal.passed || proposal.duration <= block.timestamp) {
             proposal.passed = true;
             revert("Time has already passed");
-        }
-        require(!stakeholderVotes[msg.sender][proposal.id], "Double voting is not allowed");
-        stakeholderVotes[msg.sender][proposal.id] = true;
+    } 
+    require(!stakeholderVotes[msg.sender][proposal.id], "Double voting is not allowed");
+    stakeholderVotes[msg.sender][proposal.id] = true;
     }
 
      // pay beneficiary
