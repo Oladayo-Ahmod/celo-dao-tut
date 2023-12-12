@@ -28,7 +28,7 @@ This tutorial provides a step-by-step method for creating and implementing a Dec
   - [6.5 Contributor Status](#65-contributor-status)
   - [6.6 Contributor Balance](#66-contributor-balance)
   - [6.7 Deployer Address](#67-deployer-address)
-- [Section 7: Deploying the DAO on Celo using hardhat deploy](#72-deploying-the-dao-on-celo-using-hardhat-deploy)
+- [Section 7: Deploying the DAO on Celo using hardhat deploy](#71-deploying-the-dao-on-celo-using-hardhat-deploy)
   - [7.1 Install dependencies](#71-install-dependencies)
   - [7.2 Replace Lock.sol](#72-replace-lock.sol)
   - [7.3 Compile and Deploy](#73-compile-and-deploy)
@@ -48,15 +48,13 @@ To begin, understand the basic framework of the Solidity-written DAO smart contr
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 
-
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract CeloDao is AccessControl,ReentrancyGuard {
+contract CeloDao is AccessControl, ReentrancyGuard {
 
     uint256 totalProposals;
     uint256 balance;
-    address deployer;
 
     uint256 immutable STAKEHOLDER_MIN_CONTRIBUTION = 0.1 ether;
     uint256 immutable MIN_VOTE_PERIOD = 5 minutes;
@@ -67,9 +65,8 @@ contract CeloDao is AccessControl,ReentrancyGuard {
     mapping(address => uint256[]) private stakeholderVotes;
     mapping(uint256 => Voted[]) private votedOn;
     mapping(address => uint256) private contributors;
-    mapping(address => uint256) private stakeholders;
 
-      struct Proposals {
+    struct Proposals {
         uint256 id;
         uint256 amount;
         uint256 upVote;
@@ -84,13 +81,13 @@ contract CeloDao is AccessControl,ReentrancyGuard {
         address executor;
     }
 
-     struct Voted {
+    struct Voted {
         address voter;
         uint256 timestamp;
         bool chosen;
     }
 
-     modifier stakeholderOnly(string memory message) {
+    modifier stakeholderOnly(string memory message) {
         require(hasRole(STAKEHOLDER_ROLE,msg.sender),message);
         _;
     }
@@ -99,13 +96,7 @@ contract CeloDao is AccessControl,ReentrancyGuard {
         _;
     }
 
-    modifier onlyDeployer(string memory message) {
-        require(msg.sender == deployer,message);
-
-        _;
-    }
-
-     event ProposalAction(
+    event ProposalAction(
         address indexed creator,
         bytes32 role,
         string message,
@@ -113,7 +104,7 @@ contract CeloDao is AccessControl,ReentrancyGuard {
         uint256 amount
     );
 
-     event VoteAction(
+    event VoteAction(
         address indexed creator,
         bytes32 role,
         string message,
@@ -124,11 +115,11 @@ contract CeloDao is AccessControl,ReentrancyGuard {
         bool chosen
     );
 
-     constructor(){
-        deployer = msg.sender;
+    constructor(){
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-       // proposal creation
+    // proposal creation
     function createProposal (
         string calldata title,
         string calldata description,
@@ -154,11 +145,9 @@ contract CeloDao is AccessControl,ReentrancyGuard {
         return StakeholderProposal;
     }
 
-    
     // voting
     function performVote(uint256 proposalId,bool chosen) external
     stakeholderOnly("Only stakeholders can perform voting")
-    returns(Voted memory)
     {
         Proposals storage StakeholderProposal = raisedProposals[proposalId];
         handleVoting(StakeholderProposal);
@@ -186,13 +175,6 @@ contract CeloDao is AccessControl,ReentrancyGuard {
             StakeholderProposal.downVotes,
             chosen
         );
-
-        return Voted(
-            msg.sender,
-            block.timestamp,
-            chosen
-        );
-
     }
 
     // handling vote
@@ -209,9 +191,9 @@ contract CeloDao is AccessControl,ReentrancyGuard {
 
     }
 
-     // pay beneficiary
+    // pay beneficiary
     function payBeneficiary(uint proposalId) external
-    stakeholderOnly("Only stakeholders can make payment") onlyDeployer("Only deployer can make payment") nonReentrant() returns(uint256){
+    stakeholderOnly("Only stakeholders can make payment") nonReentrant() {
         Proposals storage stakeholderProposal = raisedProposals[proposalId];
         require(balance >= stakeholderProposal.amount, "insufficient fund");
         if(stakeholderProposal.paid == true) revert("payment already made");
@@ -229,26 +211,21 @@ contract CeloDao is AccessControl,ReentrancyGuard {
             stakeholderProposal.beneficiary,
             stakeholderProposal.amount
         );
-
-        return balance;
-
     }
 
-    // paymment functionality
-    function pay(uint256 amount,address to) internal returns(bool){
+    // payment functionality
+    function pay(uint256 amount,address to) internal {
         (bool success,) = payable(to).call{value : amount}("");
         require(success, "payment failed");
-        return true;
     }
 
-      // contribution functionality
+    // contribution functionality
     function contribute() payable external returns(uint256){
         require(msg.value > 0 ether, "invalid amount");
         if (!hasRole(STAKEHOLDER_ROLE, msg.sender)) {
             uint256 totalContributions = contributors[msg.sender] + msg.value;
 
             if (totalContributions >= STAKEHOLDER_MIN_CONTRIBUTION) {
-                stakeholders[msg.sender] = msg.value;
                 contributors[msg.sender] += msg.value;
                  _grantRole(STAKEHOLDER_ROLE,msg.sender);
                  _grantRole(COLLABORATOR_ROLE, msg.sender);
@@ -259,7 +236,6 @@ contract CeloDao is AccessControl,ReentrancyGuard {
             }
         }
         else{
-            stakeholders[msg.sender] += msg.value;
             contributors[msg.sender] += msg.value;
         }
 
@@ -272,18 +248,17 @@ contract CeloDao is AccessControl,ReentrancyGuard {
             msg.value
         );
 
-
         return balance;
     }
 
-        // get single proposal
+    // get single proposal
     function getProposals(uint256 proposalID) external view returns(Proposals memory) {
         return raisedProposals[proposalID];
     }
 
     // get all proposals
     function getAllProposals() external view returns(Proposals[] memory props){
-        props = new Proposals[](totalProposals);
+        props = new Proposals;
         for (uint i = 0; i < totalProposals; i++) {
             props[i] = raisedProposals[i];
         }
@@ -302,19 +277,17 @@ contract CeloDao is AccessControl,ReentrancyGuard {
 
     // get stakeholders balances
     function getStakeholdersBalances() stakeholderOnly("unauthorized") external view returns(uint256){
-        return stakeholders[msg.sender];
-
+        return contributors[msg.sender];
     }
 
-     // get total balances
+    // get total balance
     function getTotalBalance() external view returns(uint256){
         return balance;
-
     }
 
     // check if stakeholder
     function stakeholderStatus() external view returns(bool){
-        return stakeholders[msg.sender] > 0;
+        return contributors[msg.sender] >= STAKEHOLDER_MIN_CONTRIBUTION;
     }
 
     // check if contributor
@@ -326,13 +299,8 @@ contract CeloDao is AccessControl,ReentrancyGuard {
     function getContributorsBalance() contributorOnly("unathorized") external view returns(uint256){
         return contributors[msg.sender];
     }
-
-    function getDeployer()external view returns(address){
-        return deployer;
-
-    }
-
 }
+
 
 ```
 
@@ -376,7 +344,6 @@ this function allows stakeholders to create proposals by providing essential det
         );
         return StakeholderProposal;
     }
-
 ```
 
 ## Section 4: Involvement of Stakeholders
@@ -384,6 +351,7 @@ this function allows stakeholders to create proposals by providing essential det
 ### 4.1 Supporting the DAO
 
 this function allows contributors to send Ether to the contract. If the contributor is not a stakeholder, it checks whether their total contributions meet the minimum requirement. If so, the contributor becomes a stakeholder and collaborator; otherwise, they become a collaborator only.
+
 ```solidity
     function contribute() payable external returns(uint256){
         require(msg.value > 0 ether, "invalid amount");
@@ -391,7 +359,6 @@ this function allows contributors to send Ether to the contract. If the contribu
             uint256 totalContributions = contributors[msg.sender] + msg.value;
 
             if (totalContributions >= STAKEHOLDER_MIN_CONTRIBUTION) {
-                stakeholders[msg.sender] = msg.value;
                 contributors[msg.sender] += msg.value;
                  _grantRole(STAKEHOLDER_ROLE,msg.sender);
                  _grantRole(COLLABORATOR_ROLE, msg.sender);
@@ -402,7 +369,6 @@ this function allows contributors to send Ether to the contract. If the contribu
             }
         }
         else{
-            stakeholders[msg.sender] += msg.value;
             contributors[msg.sender] += msg.value;
         }
 
@@ -415,7 +381,6 @@ this function allows contributors to send Ether to the contract. If the contribu
             msg.value
         );
 
-
         return balance;
     }
 ```
@@ -424,10 +389,10 @@ this function allows contributors to send Ether to the contract. If the contribu
 
 this function facilitates the voting process for stakeholders, updating proposal details, 
 recording votes, and emitting an event to notify external applications about the voting action.
+
 ```solidity
  function performVote(uint256 proposalId,bool chosen) external
     stakeholderOnly("Only stakeholders can perform voting")
-    returns(Voted memory)
     {
         Proposals storage StakeholderProposal = raisedProposals[proposalId];
         handleVoting(StakeholderProposal);
@@ -455,24 +420,18 @@ recording votes, and emitting an event to notify external applications about the
             StakeholderProposal.downVotes,
             chosen
         );
-
-        return Voted(
-            msg.sender,
-            block.timestamp,
-            chosen
-        );
-
     }
 ```
+
 ## Section 5: Proposal Execution and Payments
 
 ### 5.1 Payment Logic
 
 this function ensures the necessary conditions are met before making a payment to the beneficiary of a proposal. It records the payment details, updates the contract's balance, and emits an event to inform external applications about the successful payment action.
-```solidity
 
+```solidity
     function payBeneficiary(uint proposalId) external
-    stakeholderOnly("Only stakeholders can make payment") onlyDeployer("Only deployer can make payment") nonReentrant() returns(uint256){
+    stakeholderOnly("Only stakeholders can make payment") nonReentrant() {
         Proposals storage stakeholderProposal = raisedProposals[proposalId];
         require(balance >= stakeholderProposal.amount, "insufficient fund");
         if(stakeholderProposal.paid == true) revert("payment already made");
@@ -490,11 +449,9 @@ this function ensures the necessary conditions are met before making a payment t
             stakeholderProposal.beneficiary,
             stakeholderProposal.amount
         );
-
-        return balance;
-
     }
 ```
+
 ### 5.2 Single proposal
 
 this function retrieves single proposal using `proposalID`
@@ -503,18 +460,18 @@ this function retrieves single proposal using `proposalID`
         return raisedProposals[proposalID];
     }
 ```
+
 ### 5.3 All proposals
 
 this function retrieves all proposals
 ```solidity
  function getAllProposals() external view returns(Proposals[] memory props){
-        props = new Proposals[](totalProposals);
+        props = new Proposals;
         for (uint i = 0; i < totalProposals; i++) {
             props[i] = raisedProposals[i];
         }
-
-    }
 ```
+
 ### 5.4 Proposal Votes
 
 this function retrieves proposal votes
@@ -523,6 +480,7 @@ this function retrieves proposal votes
         return votedOn[proposalID];
     }
 ```
+
 ## Section 6: Stakeholders and Contributors
 
 ### 6.1 Stakeholder Votes
@@ -531,35 +489,37 @@ this function retrieves stakeholder votes
 ```solidity
 function getStakeholdersVotes() stakeholderOnly("Unauthorized") external view returns(uint256[] memory){
         return stakeholderVotes[msg.sender];
-    }   
+    }  
 ```
+
 ### 6.2 Stakeholder Balance
 
 this function retrieves stakeholder balance
 ```solidity
  function getStakeholdersBalances() stakeholderOnly("unauthorized") external view returns(uint256){
-        return stakeholders[msg.sender];
-
+        return contributors[msg.sender];
     }
 ```
+
 ### 6.3 DAO Total Balance
 
 this function retrieves the balance of the DAO
 ```solidity
  function getTotalBalance() external view returns(uint256){
         return balance;
-
     }
 ```
+
 ### 6.4 Stakeholder Status
 
 this function checks stakeholder status
 ```solidity
  function stakeholderStatus() external view returns(bool){
-        return stakeholders[msg.sender] > 0;
+        return contributors[msg.sender] >= STAKEHOLDER_MIN_CONTRIBUTION;
     }
 
 ```
+
 ### 6.5 Contributor Status
 
 this function checks the contributor status
@@ -568,14 +528,16 @@ this function checks the contributor status
         return contributors[msg.sender] > 0;
     }
 ```
+
 ### 6.6 Contributor Balance
 
 this function retrieves the contributor's balance
 ```solidity
-function getContributorsBalance() contributorOnly("unathorized") external view returns(uint256){
+    function getContributorsBalance() contributorOnly("unathorized") external view returns(uint256){
         return contributors[msg.sender];
     }
 ```
+
 ### 6.7 Deployer Address
 
 this function returns the deployer address
@@ -585,6 +547,7 @@ function getDeployer()external view returns(address){
 
     }
 ```
+
 ## Section 7: Deploying the DAO on Celo using hardhat deploy
 
 ### 7.1 Install dependencies
