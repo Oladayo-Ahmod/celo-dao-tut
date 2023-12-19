@@ -36,7 +36,7 @@ This tutorial provides a step-by-step method for creating and implementing a Dec
 
 ### 1.1 Overview of Celo Blockchain and DAOs
 
-Decentralized Autonomous Organisations (DAOs) revolutionize community-driven decision-making. This section discusses the importance of DAOs and highlights the unique characteristics of the Celo blockchain.
+Decentralized Autonomous Organisations (DAOs) revolutionize community-driven decision-making. 
 
 ## Section 2: Smart Contract Development
 
